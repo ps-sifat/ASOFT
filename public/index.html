@@ -102,8 +102,44 @@
         <button id="retry-btn" class="retry-btn">Try Again</button>
       </div>
 
-      <!-- Results Grid -->
-      <div id="results-grid" class="results-grid hidden"></div>
+      <!-- Search Results Layout (Sidebar + Grid) -->
+      <div id="search-layout" class="search-layout hidden">
+        <!-- Left Filter Sidebar -->
+        <aside class="filter-sidebar" id="filter-sidebar">
+          <div class="sidebar-section">
+            <h4>Country Region</h4>
+            <div class="country-selector">
+              <select id="country-select" class="premium-select">
+                <option value="all">All Countries</option>
+                <option value="BD">Bangladesh (Daraz)</option>
+                <option value="global">Global (Google Shopping)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h4>Sort By</h4>
+            <div class="sort-selector">
+              <select id="sort-select" class="premium-select">
+                <option value="best">Best Match</option>
+                <option value="low-to-high">Price: Low to High</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h4>Specific Shop</h4>
+            <div class="shop-filter-list" id="shop-filter-list">
+              <!-- Dynamically populated checkboxes -->
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right Content Area (Grid) -->
+        <div class="results-main">
+          <div id="results-grid" class="results-grid"></div>
+        </div>
+      </div>
     </main>
 
     <!-- Footer -->

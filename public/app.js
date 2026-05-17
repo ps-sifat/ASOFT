@@ -4,6 +4,7 @@
 const searchForm = document.getElementById('search-form');
 const searchInput = document.getElementById('search-input');
 const quickChips = document.getElementById('quick-search-chips');
+const searchLayout = document.getElementById('search-layout');
 const resultsGrid = document.getElementById('results-grid');
 const infoBanner = document.getElementById('info-banner');
 const bannerText = document.getElementById('banner-text');
@@ -15,8 +16,20 @@ const retryBtn = document.getElementById('retry-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const appContainer = document.querySelector('.app-container');
 
-// Last searched query tracker
+// Search & filter state trackers
 let lastQuery = '';
+let allFetchedProducts = [];
+let selectedShops = new Set();
+
+// Normalise price strings into sortable floating numbers
+function parseNumericPrice(priceStr) {
+  if (typeof priceStr === 'number') return priceStr;
+  if (!priceStr) return 0;
+  // Remove non-digit and non-dot characters
+  const cleaned = priceStr.replace(/[^\d.]/g, '');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+}
 
 // Helper to determine the store CSS class based on name
 function getStoreClass(storeName) {
@@ -27,6 +40,7 @@ function getStoreClass(storeName) {
   if (name.includes('walmart')) return 'walmart';
   if (name.includes('best buy') || name.includes('bestbuy')) return 'bestbuy';
   if (name.includes('target')) return 'target';
+  if (name.includes('daraz')) return 'daraz';
   return 'generic';
 }
 
@@ -87,6 +101,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Sort Selector Change
+  const sortSelect = document.getElementById('sort-select');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', () => {
+      applyFiltersAndRender();
+    });
+  }
+
+  // Country Selector Change
+  const countrySelect = document.getElementById('country-select');
+  if (countrySelect) {
+    countrySelect.addEventListener('change', () => {
+      const query = searchInput.value.trim();
+      if (query) {
+        performSearch(query);
+      }
+    });
+  }
+
 
 
   // Retry button click
@@ -106,8 +139,9 @@ async function performSearch(query) {
   showState('loading');
   
   try {
-    // API Call to Express backend
-    const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+    // API Call to Express backend (including country region selector)
+    const country = document.getElementById('country-select').value;
+    const response = await fetch(`/search?q=${encodeURIComponent(query)}&country=${country}`);
     
     if (!response.ok) {
       throw new Error(`Server returned status: ${response.status}`);
@@ -149,7 +183,7 @@ async function performSearch(query) {
 function showState(state) {
   loadingState.classList.add('hidden');
   errorState.classList.add('hidden');
-  resultsGrid.classList.add('hidden');
+  searchLayout.classList.add('hidden');
 
   if (state === 'idle') {
     appContainer.classList.remove('has-results');
@@ -161,7 +195,7 @@ function showState(state) {
     } else if (state === 'error') {
       errorState.classList.remove('hidden');
     } else if (state === 'grid') {
-      resultsGrid.classList.remove('hidden');
+      searchLayout.classList.remove('hidden');
     }
   }
 }
@@ -173,13 +207,101 @@ function showError(title, message) {
   showState('error');
 }
 
-// Render Results to the Grid
-// Enforces ordering: 1. Store Name, 2. Item Image, 3. Title, 4. Price
+// Dynamic populator for shop checkbox filters in left sidebar
+function populateShopFilters(shops) {
+  const shopListContainer = document.getElementById('shop-filter-list');
+  if (!shopListContainer) return;
+
+  shopListContainer.innerHTML = '';
+  selectedShops.clear();
+
+  shops.forEach((shopName) => {
+    selectedShops.add(shopName); // active by default
+
+    const label = document.createElement('label');
+    label.className = 'shop-checkbox-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = shopName;
+    checkbox.checked = true;
+
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedShops.add(shopName);
+      } else {
+        selectedShops.delete(shopName);
+      }
+      applyFiltersAndRender();
+    });
+
+    const span = document.createElement('span');
+    span.textContent = shopName;
+
+    label.appendChild(checkbox);
+    label.appendChild(span);
+    shopListContainer.appendChild(label);
+  });
+}
+
+// Aggregates shop checkboxes and sort selectors, then re-renders the grid
+function applyFiltersAndRender() {
+  let filtered = [...allFetchedProducts];
+
+  // 1. Filter by specific checked shops
+  if (selectedShops.size > 0) {
+    filtered = filtered.filter(p => selectedShops.has(p.store));
+  } else {
+    // If no checkboxes are checked at all, display empty list
+    filtered = [];
+  }
+
+  // 2. Sort by Price: Low to High if selected (otherwise default "Best Match" match sequence)
+  const sortBy = document.getElementById('sort-select').value;
+  if (sortBy === 'low-to-high') {
+    filtered.sort((a, b) => {
+      return parseNumericPrice(a.price) - parseNumericPrice(b.price);
+    });
+  }
+
+  renderGridOnly(filtered);
+}
+
+// Populate search products list, generate sidebar filters, and fire sorting
 function renderResults(products, isMock = false, isBackendOffline = false) {
-  // Clear existing items
+  allFetchedProducts = products;
+
+  // 1. Populate the sidebar shop list checkboxes
+  const uniqueShops = [...new Set(products.map(p => p.store))];
+  populateShopFilters(uniqueShops);
+
+  // 2. Display the main search layout
+  showState('grid');
+
+  // 3. Fire the filters and sorting engine to render items
+  applyFiltersAndRender();
+}
+
+// Decoupled DOM cards injection routine into the grid
+// Enforces ordering: 1. Store Name, 2. Item Image, 3. Title, 4. Price
+function renderGridOnly(products) {
   resultsGrid.innerHTML = '';
-  
-  // Render cards
+
+  if (products.length === 0) {
+    const noResultsMsg = document.createElement('div');
+    noResultsMsg.className = 'no-filtered-results';
+    noResultsMsg.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin: 20px auto; display: block; opacity: 0.5;">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p style="text-align: center; color: var(--text-muted); font-size: 0.95rem;">No products match your selected shop filters.</p>
+    `;
+    resultsGrid.appendChild(noResultsMsg);
+    return;
+  }
+
   products.forEach((product) => {
     // Card container
     const card = document.createElement('div');
@@ -208,14 +330,12 @@ function renderResults(products, isMock = false, isBackendOffline = false) {
     img.className = 'product-image';
     img.alt = product.title;
     
-    // Smooth image loading shimmer removal
     img.onload = () => {
       imageContainer.classList.remove('shimmer');
     };
     
     img.onerror = () => {
       imageContainer.classList.remove('shimmer');
-      // Elegant generic fallback icon if image fails to load
       img.src = 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=300&auto=format&fit=crop&q=60';
     };
     
@@ -249,37 +369,15 @@ function renderResults(products, isMock = false, isBackendOffline = false) {
     buyButton.rel = 'noopener noreferrer';
     buyButton.innerHTML = `
       <span>Buy</span>
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
       </svg>
     `;
     priceContainer.appendChild(buyButton);
     card.appendChild(priceContainer);
     
-    // Append card to results grid
     resultsGrid.appendChild(card);
   });
-  
-  // Set banner text based on data origin
-  if (infoBanner) {
-    infoBanner.classList.remove('hidden');
-    if (isBackendOffline) {
-      if (bannerText) bannerText.innerHTML = `⚠️ <strong>Demo Mode:</strong> Backend server is offline. Showing high-fidelity mock results for "${lastQuery}".`;
-      infoBanner.style.border = '1px solid rgba(245, 158, 11, 0.2)';
-      infoBanner.style.background = 'linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.08) 100%)';
-    } else if (isMock) {
-      if (bannerText) bannerText.innerHTML = `💡 <strong>Demo Mode:</strong> Backend API returned no results (verify your SerpAPI key). Showing mock results for "${lastQuery}".`;
-      infoBanner.style.border = '1px solid rgba(99, 102, 241, 0.2)';
-      infoBanner.style.background = 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)';
-    } else {
-      if (bannerText) bannerText.innerHTML = `✨ <strong>Live Results:</strong> Showing comparison results for "${lastQuery}" aggregated via SerpAPI Google Shopping.`;
-      infoBanner.style.border = '1px solid rgba(16, 185, 129, 0.2)';
-      infoBanner.style.background = 'linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(52, 211, 153, 0.08) 100%)';
-    }
-  }
-  
-  // Display the grid
-  showState('grid');
 }
 
 // ==========================================
