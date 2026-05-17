@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unicart - Universal Product Search</title>
+  <!-- Google Fonts: Outfit for titles, Inter for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet link -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Glow Effects -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div class="app-container">
+    <!-- Theme Toggle Button -->
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
+      <!-- Sun Icon (shown in light mode) -->
+      <svg class="sun-icon hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+      <!-- Moon Icon (shown in dark mode) -->
+      <svg class="moon-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+    </button>
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-container" id="header-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 class="logo-text">Uni<span>cart</span></h1>
+      </div>
+      <p class="tagline">Find it once, compare prices instantly.</p>
+    </header>
+
+    <!-- Search Section -->
+    <section class="search-section">
+      <form id="search-form" class="search-form">
+        <div class="search-input-wrapper">
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Search for items, brands, or electronics..." 
+            autocomplete="off"
+            required
+          />
+          <button type="submit" class="search-btn-inside" title="Search">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+          </button>
+        </div>
+      </form>
+
+
+
+      <!-- Quick Search Chips -->
+      <div class="quick-chips" id="quick-search-chips">
+        <span class="chip-label">Popular:</span>
+        <button class="chip" data-query="iphone">iPhone 15</button>
+        <button class="chip" data-query="rtx 4090">RTX 4090</button>
+        <button class="chip" data-query="mechanical keyboard">Mechanical Keyboard</button>
+        <button class="chip" data-query="nike shoes">Nike Air</button>
+        <button class="chip" data-query="sony headphones">Sony WH-1000XM5</button>
+      </div>
+    </section>
+
+
+
+
+
+    <!-- Main Results Grid -->
+    <main class="results-container">
+      <!-- Loading State -->
+      <div id="loading-state" class="loading-state hidden">
+        <div class="spinner"></div>
+        <p>Scanning the web for the best prices...</p>
+      </div>
+
+      <!-- Error / Empty Results State -->
+      <div id="error-state" class="error-state hidden">
+        <div class="error-graphic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h3 id="error-title">No products found</h3>
+        <p id="error-message">We couldn't find any shopping results for this search term. Try adjusting your query.</p>
+        <button id="retry-btn" class="retry-btn">Try Again</button>
+      </div>
+
+      <!-- Results Grid -->
+      <div id="results-grid" class="results-grid hidden"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>&copy; 2026 Unicart Engine. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <!-- JavaScript file -->
+  <script src="app.js"></script>
+</body>
+</html>
